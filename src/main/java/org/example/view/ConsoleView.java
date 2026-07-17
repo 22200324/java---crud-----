@@ -13,6 +13,8 @@ import java.util.Optional;
 import java.util.Scanner;
 
 public class ConsoleView {
+    private static final String RECORD_SEPARATOR = "-".repeat(90);
+
     private final WorkoutRecordService service;
     private final Scanner scanner;
 
@@ -106,7 +108,7 @@ public class ConsoleView {
 
         WorkoutRecord savedRecord = service.addRecord(record);
         System.out.println("운동 기록이 저장되었습니다.");
-        System.out.println(savedRecord);
+        printRecordDetails(savedRecord);
     }
 
     private void showAllRecords() {
@@ -119,9 +121,7 @@ public class ConsoleView {
             return;
         }
 
-        for (WorkoutRecord record : records) {
-            System.out.println(record);
-        }
+        printRecordList(records);
     }
 
     private void showRecordById() {
@@ -132,7 +132,7 @@ public class ConsoleView {
         Optional<WorkoutRecord> record = service.getRecordById(id);
 
         if (record.isPresent()) {
-            System.out.println(record.get());
+            printRecordDetails(record.get());
         } else {
             System.out.println("해당 id의 운동 기록이 없습니다.");
         }
@@ -151,7 +151,8 @@ public class ConsoleView {
         }
 
         WorkoutRecord existingRecord = foundRecord.get();
-        System.out.println("현재 기록: " + existingRecord);
+        System.out.println("현재 기록:");
+        printRecordDetails(existingRecord);
 
         String exerciseName = readString("새 운동 이름: ");
         double weight = readDouble("새 무게: ");
@@ -177,6 +178,7 @@ public class ConsoleView {
 
         if (result) {
             System.out.println("운동 기록이 수정되었습니다.");
+            printRecordDetails(updatedRecord);
         } else {
             System.out.println("수정할 운동 기록을 찾지 못했습니다.");
         }
@@ -194,7 +196,8 @@ public class ConsoleView {
             return;
         }
 
-        System.out.println("삭제할 기록: " + foundRecord.get());
+        System.out.println("삭제할 기록:");
+        printRecordDetails(foundRecord.get());
 
         if (!readConfirmation("정말 삭제하시겠습니까? (y/n): ")) {
             System.out.println("삭제를 취소했습니다.");
@@ -223,9 +226,7 @@ public class ConsoleView {
 
         System.out.println("검색 결과 " + records.size() + "건:");
 
-        for (WorkoutRecord record : records) {
-            System.out.println(record);
-        }
+        printRecordList(records);
     }
 
     private void searchByDateRange() {
@@ -242,9 +243,7 @@ public class ConsoleView {
 
         System.out.println("조회 결과 " + records.size() + "건:");
 
-        for (WorkoutRecord record : records) {
-            System.out.println(record);
-        }
+        printRecordList(records);
     }
 
     private void showStatistics() {
@@ -271,6 +270,43 @@ public class ConsoleView {
             System.out.println("  총 세트 수: " + exercise.totalSets() + "세트");
             System.out.printf("  누적 볼륨: %,.1fkg%n", exercise.totalVolume());
         }
+    }
+
+    private void printRecordList(List<WorkoutRecord> records) {
+        System.out.println(RECORD_SEPARATOR);
+
+        for (WorkoutRecord record : records) {
+            System.out.printf(
+                    "ID %d | %s | %s | %,.1fkg | %d회 × %d세트 | 볼륨 %,.1fkg%n",
+                    record.getId(),
+                    record.getWorkoutDate(),
+                    record.getExerciseName(),
+                    record.getWeight(),
+                    record.getReps(),
+                    record.getSets(),
+                    record.calculateVolume()
+            );
+            System.out.println("메모: " + displayMemo(record));
+            System.out.println(RECORD_SEPARATOR);
+        }
+    }
+
+    private void printRecordDetails(WorkoutRecord record) {
+        System.out.println(RECORD_SEPARATOR);
+        System.out.println("ID: " + record.getId());
+        System.out.println("운동 이름: " + record.getExerciseName());
+        System.out.printf("무게: %,.1fkg%n", record.getWeight());
+        System.out.println("반복 횟수: " + record.getReps() + "회");
+        System.out.println("세트 수: " + record.getSets() + "세트");
+        System.out.println("운동 날짜: " + record.getWorkoutDate());
+        System.out.printf("운동 볼륨: %,.1fkg%n", record.calculateVolume());
+        System.out.println("메모: " + displayMemo(record));
+        System.out.println(RECORD_SEPARATOR);
+    }
+
+    private String displayMemo(WorkoutRecord record) {
+        String memo = record.getMemo();
+        return memo == null || memo.isBlank() ? "없음" : memo;
     }
 
     private String readString(String message) {
