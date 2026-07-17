@@ -1,8 +1,10 @@
 package org.example.repository;
 
+import org.example.exception.DataAccessException;
 import org.example.model.WorkoutRecord;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -13,22 +15,32 @@ import java.util.Optional;
 
 public class WorkoutRecordFileRepository implements WorkoutRecordRepository {
 
-    private final Path filePath = Path.of("data", "record.txt");
+    private final Path filePath;
 
     public WorkoutRecordFileRepository() {
+        this(Path.of("data", "record.txt"));
+    }
+
+    public WorkoutRecordFileRepository(Path filePath) {
+        this.filePath = filePath;
+
         try {
-            Files.createDirectories(filePath.getParent());
+            Path parent = filePath.getParent();
+
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
 
             if (!Files.exists(filePath)) {
                 Files.createFile(filePath);
             }
         } catch (IOException e) {
-            throw new RuntimeException("파일 저장소 초기화 중 오류가 발생했습니다.", e);
+            throw new DataAccessException("파일 저장소를 초기화하지 못했습니다.", e);
         }
     }
 
     @Override
-    public WorkoutRecord save(WorkoutRecord record) {
+    public synchronized WorkoutRecord save(WorkoutRecord record) {
         List<WorkoutRecord> records = findAll();
 
         long maxId = 0L;
@@ -49,19 +61,20 @@ public class WorkoutRecordFileRepository implements WorkoutRecordRepository {
             Files.writeString(
                     filePath,
                     line + System.lineSeparator(),
+                    StandardCharsets.UTF_8,
                     StandardOpenOption.APPEND
             );
         } catch (IOException e) {
-            throw new RuntimeException("운동 기록 저장 중 오류가 발생했습니다.", e);
+            throw new DataAccessException("운동 기록을 파일에 저장하지 못했습니다.", e);
         }
 
         return record;
     }
 
     @Override
-    public List<WorkoutRecord> findAll() {
+    public synchronized List<WorkoutRecord> findAll() {
         try {
-            List<String> lines = Files.readAllLines(filePath);
+            List<String> lines = Files.readAllLines(filePath, StandardCharsets.UTF_8);
             List<WorkoutRecord> records = new ArrayList<>();
 
             for (String line : lines) {
@@ -72,7 +85,9 @@ public class WorkoutRecordFileRepository implements WorkoutRecordRepository {
 
             return records;
         } catch (IOException e) {
-            throw new RuntimeException("운동 기록 조회 중 오류가 발생했습니다.", e);
+            throw new DataAccessException("운동 기록 파일을 읽지 못했습니다.", e);
+        } catch (RuntimeException e) {
+            throw new DataAccessException("운동 기록 파일의 형식이 올바르지 않습니다.", e);
         }
     }
 
@@ -84,7 +99,7 @@ public class WorkoutRecordFileRepository implements WorkoutRecordRepository {
     }
 
     @Override
-    public boolean update(WorkoutRecord record) {
+    public synchronized boolean update(WorkoutRecord record) {
         List<WorkoutRecord> records = findAll();
         boolean updated = false;
 
@@ -106,11 +121,26 @@ public class WorkoutRecordFileRepository implements WorkoutRecordRepository {
     }
 
     private void writeAll(List<WorkoutRecord> records) {
+        List<String> lines = records.stream()
+                .map(this::toLine)
+                .toList();
+
+        try {
+            Files.write(
+                    filePath,
+                    lines,
+                    StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING
+            );
+        } catch (IOException e) {
+            throw new DataAccessException("운동 기록 파일을 다시 쓰지 못했습니다.", e);
+        }
     }
 
 
     @Override
-    public boolean deleteById(Long id) {
+    public synchronized boolean deleteById(Long id) {
         List<WorkoutRecord> records = findAll();
         boolean deleted = false;
 
@@ -133,25 +163,68 @@ public class WorkoutRecordFileRepository implements WorkoutRecordRepository {
 
     private String toLine(WorkoutRecord record) {
         return record.getId() + "|" +
-                record.getExerciseName() + "|" +
+                escape(record.getExerciseName()) + "|" +
                 record.getWeight() + "|" +
                 record.getReps() + "|" +
                 record.getSets() + "|" +
                 record.getWorkoutDate() + "|" +
-                record.getMemo();
+                escape(record.getMemo());
     }
 
     private WorkoutRecord fromLine(String line) {
-        String[] parts = line.split("\\|");
+        List<String> parts = splitLine(line);
+
+        if (parts.size() != 7) {
+            throw new IllegalArgumentException("필드 개수가 7개가 아닙니다: " + line);
+        }
 
         return new WorkoutRecord(
-                Long.parseLong(parts[0]),
-                parts[1],
-                Double.parseDouble(parts[2]),
-                Integer.parseInt(parts[3]),
-                Integer.parseInt(parts[4]),
-                LocalDate.parse(parts[5]),
-                parts[6]
+                Long.parseLong(parts.get(0)),
+                parts.get(1),
+                Double.parseDouble(parts.get(2)),
+                Integer.parseInt(parts.get(3)),
+                Integer.parseInt(parts.get(4)),
+                LocalDate.parse(parts.get(5)),
+                parts.get(6)
         );
+    }
+
+    private String escape(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        return value
+                .replace("\\", "\\\\")
+                .replace("|", "\\|");
+    }
+
+    private List<String> splitLine(String line) {
+        List<String> parts = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+
+        for (int i = 0; i < line.length(); i++) {
+            char character = line.charAt(i);
+
+            if (character == '\\' && i + 1 < line.length()) {
+                char nextCharacter = line.charAt(i + 1);
+
+                if (nextCharacter == '\\' || nextCharacter == '|') {
+                    current.append(nextCharacter);
+                    i++;
+                    continue;
+                }
+            }
+
+            if (character == '|') {
+                parts.add(current.toString());
+                current.setLength(0);
+            } else {
+                current.append(character);
+            }
+        }
+
+        parts.add(current.toString());
+        return parts;
     }
 }
