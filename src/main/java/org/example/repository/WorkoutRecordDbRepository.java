@@ -1,5 +1,6 @@
 package org.example.repository;
 
+import org.example.exception.DataAccessException;
 import org.example.model.WorkoutRecord;
 import org.example.util.DBConnection;
 
@@ -34,18 +35,24 @@ public class WorkoutRecordDbRepository implements WorkoutRecordRepository {
             statement.setDate(5, Date.valueOf(record.getWorkoutDate()));
             statement.setString(6, record.getMemo());
 
-            statement.executeUpdate();
+            int affectedRows = statement.executeUpdate();
+
+            if (affectedRows != 1) {
+                throw new DataAccessException("운동 기록이 저장되지 않았습니다.");
+            }
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     record.setId(generatedKeys.getLong(1));
+                } else {
+                    throw new DataAccessException("저장된 운동 기록의 id를 가져오지 못했습니다.");
                 }
             }
 
             return record;
 
         } catch (SQLException e) {
-            throw new RuntimeException("운동 기록 DB 저장 중 오류가 발생했습니다.", e);
+            throw new DataAccessException("운동 기록을 DB에 저장하지 못했습니다.", e);
         }
     }
 
@@ -72,7 +79,7 @@ public class WorkoutRecordDbRepository implements WorkoutRecordRepository {
             return records;
 
         } catch (SQLException e) {
-            throw new RuntimeException("운동 기록 전체 조회 중 오류가 발생했습니다.", e);
+            throw new DataAccessException("운동 기록을 DB에서 조회하지 못했습니다.", e);
         }
     }
 
@@ -100,7 +107,7 @@ public class WorkoutRecordDbRepository implements WorkoutRecordRepository {
             }
 
         } catch (SQLException e) {
-            throw new RuntimeException("운동 기록 단건 조회 중 오류가 발생했습니다.", e);
+            throw new DataAccessException("운동 기록을 DB에서 조회하지 못했습니다.", e);
         }
     }
 
@@ -134,7 +141,7 @@ public class WorkoutRecordDbRepository implements WorkoutRecordRepository {
             return result > 0;
 
         } catch (SQLException e) {
-            throw new RuntimeException("운동 기록 수정 중 오류가 발생했습니다.", e);
+            throw new DataAccessException("운동 기록을 DB에서 수정하지 못했습니다.", e);
         }
     }
 
@@ -156,7 +163,7 @@ public class WorkoutRecordDbRepository implements WorkoutRecordRepository {
             return result > 0;
 
         } catch (SQLException e) {
-            throw new RuntimeException("운동 기록 삭제 중 오류가 발생했습니다.", e);
+            throw new DataAccessException("운동 기록을 DB에서 삭제하지 못했습니다.", e);
         }
     }
 

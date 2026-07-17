@@ -1,5 +1,7 @@
 package org.example.util;
 
+import org.example.exception.DataAccessException;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
@@ -23,22 +25,22 @@ public class DBConnection {
                 .getResourceAsStream("db.properties")) {
 
             if (inputStream == null) {
-                throw new RuntimeException("db.properties 파일을 찾을 수 없습니다.");
+                throw new DataAccessException("db.properties 파일을 찾을 수 없습니다.");
             }
 
             properties.load(inputStream);
 
-            this.url = properties.getProperty("db.url");
-            this.username = properties.getProperty("db.username");
-            this.password = properties.getProperty("db.password");
-            this.driver = properties.getProperty("db.driver");
+            this.url = getRequiredProperty(properties, "db.url");
+            this.username = getRequiredProperty(properties, "db.username");
+            this.password = getRequiredProperty(properties, "db.password");
+            this.driver = getRequiredProperty(properties, "db.driver");
 
             Class.forName(driver);
 
         } catch (IOException e) {
-            throw new RuntimeException("DB 설정 파일을 읽는 중 오류가 발생했습니다.", e);
+            throw new DataAccessException("DB 설정 파일을 읽지 못했습니다.", e);
         } catch (ClassNotFoundException e) {
-            throw new RuntimeException("MariaDB 드라이버를 찾을 수 없습니다.", e);
+            throw new DataAccessException("MariaDB 드라이버를 찾을 수 없습니다.", e);
         }
     }
 
@@ -54,7 +56,17 @@ public class DBConnection {
         try {
             return DriverManager.getConnection(url, username, password);
         } catch (SQLException e) {
-            throw new RuntimeException("DB 연결 중 오류가 발생했습니다.", e);
+            throw new DataAccessException("DB에 연결하지 못했습니다.", e);
         }
+    }
+
+    private String getRequiredProperty(Properties properties, String key) {
+        String value = properties.getProperty(key);
+
+        if (value == null || value.isBlank()) {
+            throw new DataAccessException("DB 설정값이 비어 있습니다: " + key);
+        }
+
+        return value.trim();
     }
 }

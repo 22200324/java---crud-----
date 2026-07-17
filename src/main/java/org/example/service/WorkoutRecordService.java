@@ -23,23 +23,20 @@ public class WorkoutRecordService {
     }
 
     public Optional<WorkoutRecord> getRecordById(Long id) {
+        validateId(id, "조회");
         return repository.findById(id);
     }
 
     public boolean updateRecord(WorkoutRecord record) {
         validateRecord(record);
 
-        if (record.getId() == null) {
-            throw new IllegalArgumentException("수정할 기록의 id가 필요합니다.");
-        }
+        validateId(record.getId(), "수정");
 
         return repository.update(record);
     }
 
     public boolean deleteRecord(Long id) {
-        if (id == null) {
-            throw new IllegalArgumentException("삭제할 기록의 id가 필요합니다.");
-        }
+        validateId(id, "삭제");
 
         return repository.deleteById(id);
     }
@@ -53,7 +50,7 @@ public class WorkoutRecordService {
             throw new IllegalArgumentException("운동 이름은 비어 있을 수 없습니다.");
         }
 
-        if (record.getWeight() < 0) {
+        if (!Double.isFinite(record.getWeight()) || record.getWeight() < 0) {
             throw new IllegalArgumentException("무게는 0 이상이어야 합니다.");
         }
 
@@ -67,6 +64,14 @@ public class WorkoutRecordService {
 
         if (record.getWorkoutDate() == null) {
             throw new IllegalArgumentException("운동 날짜는 비어 있을 수 없습니다.");
+        }
+
+        record.setExerciseName(record.getExerciseName().trim());
+    }
+
+    private void validateId(Long id, String action) {
+        if (id == null || id <= 0) {
+            throw new IllegalArgumentException(action + "할 기록의 id는 1 이상이어야 합니다.");
         }
     }
 }
