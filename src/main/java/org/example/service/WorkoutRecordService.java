@@ -27,6 +27,14 @@ public class WorkoutRecordService {
         return repository.findById(id);
     }
 
+    public List<WorkoutRecord> searchRecordsByExerciseName(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            throw new IllegalArgumentException("검색할 운동 이름을 입력해주세요.");
+        }
+
+        return repository.findByExerciseNameContaining(keyword.trim());
+    }
+
     public boolean updateRecord(WorkoutRecord record) {
         validateRecord(record);
 

@@ -112,6 +112,36 @@ public class WorkoutRecordDbRepository implements WorkoutRecordRepository {
     }
 
     @Override
+    public List<WorkoutRecord> findByExerciseNameContaining(String keyword) {
+        String sql = """
+                SELECT id, exercise_name, weight, reps, sets, workout_date, memo
+                FROM workout_records
+                WHERE LOCATE(LOWER(?), LOWER(exercise_name)) > 0
+                ORDER BY workout_date DESC, id DESC
+                """;
+
+        List<WorkoutRecord> records = new ArrayList<>();
+
+        try (
+                Connection connection = DBConnection.getInstance().getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)
+        ) {
+            statement.setString(1, keyword);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    records.add(mapRowToWorkoutRecord(resultSet));
+                }
+            }
+
+            return records;
+
+        } catch (SQLException e) {
+            throw new DataAccessException("운동 이름으로 기록을 검색하지 못했습니다.", e);
+        }
+    }
+
+    @Override
     public boolean update(WorkoutRecord record) {
         String sql = """
                 UPDATE workout_records
