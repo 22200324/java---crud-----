@@ -12,10 +12,15 @@ import java.util.Scanner;
 
 public class ConsoleView {
     private final WorkoutRecordService service;
-    private final Scanner scanner = new Scanner(System.in);
+    private final Scanner scanner;
 
     public ConsoleView(WorkoutRecordService service) {
+        this(service, new Scanner(System.in));
+    }
+
+    public ConsoleView(WorkoutRecordService service, Scanner scanner) {
         this.service = service;
+        this.scanner = scanner;
     }
 
     public void run() {
