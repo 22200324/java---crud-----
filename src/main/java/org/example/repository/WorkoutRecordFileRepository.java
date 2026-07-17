@@ -10,7 +10,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 public class WorkoutRecordFileRepository implements WorkoutRecordRepository {
@@ -96,6 +98,21 @@ public class WorkoutRecordFileRepository implements WorkoutRecordRepository {
         return findAll().stream()
                 .filter(record -> record.getId().equals(id))
                 .findFirst();
+    }
+
+    @Override
+    public List<WorkoutRecord> findByExerciseNameContaining(String keyword) {
+        String normalizedKeyword = keyword.toLowerCase(Locale.ROOT);
+
+        return findAll().stream()
+                .filter(record -> record.getExerciseName()
+                        .toLowerCase(Locale.ROOT)
+                        .contains(normalizedKeyword))
+                .sorted(Comparator
+                        .comparing(WorkoutRecord::getWorkoutDate)
+                        .reversed()
+                        .thenComparing(WorkoutRecord::getId, Comparator.reverseOrder()))
+                .toList();
     }
 
     @Override

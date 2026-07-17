@@ -46,6 +46,9 @@ public class ConsoleView {
                     case 5:
                         deleteRecord();
                         break;
+                    case 6:
+                        searchByExerciseName();
+                        break;
                     case 0:
                         System.out.println("프로그램을 종료합니다.");
                         return;
@@ -68,6 +71,7 @@ public class ConsoleView {
         System.out.println("3. 운동 기록 상세 조회");
         System.out.println("4. 운동 기록 수정");
         System.out.println("5. 운동 기록 삭제");
+        System.out.println("6. 운동 이름으로 검색");
         System.out.println("0. 종료");
     }
 
@@ -193,6 +197,24 @@ public class ConsoleView {
             System.out.println("운동 기록이 삭제되었습니다.");
         } else {
             System.out.println("해당 id의 운동 기록이 없습니다.");
+        }
+    }
+
+    private void searchByExerciseName() {
+        System.out.println("\n[운동 이름으로 검색]");
+
+        String keyword = readString("검색할 운동 이름: ");
+        List<WorkoutRecord> records = service.searchRecordsByExerciseName(keyword);
+
+        if (records.isEmpty()) {
+            System.out.println("검색 결과가 없습니다.");
+            return;
+        }
+
+        System.out.println("검색 결과 " + records.size() + "건:");
+
+        for (WorkoutRecord record : records) {
+            System.out.println(record);
         }
     }
 

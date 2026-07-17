@@ -13,6 +13,8 @@ public interface WorkoutRecordRepository {
 
     Optional<WorkoutRecord> findById(Long id);
 
+    List<WorkoutRecord> findByExerciseNameContaining(String keyword);
+
     boolean update(WorkoutRecord record);
 
     boolean deleteById(Long id);
