@@ -1,11 +1,15 @@
 package org.example.service;
 
+import org.example.model.ExerciseStatistics;
 import org.example.model.WorkoutRecord;
+import org.example.model.WorkoutStatistics;
 import org.example.repository.WorkoutRecordRepository;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 public class WorkoutRecordService {
     private final WorkoutRecordRepository repository;
@@ -46,6 +50,36 @@ public class WorkoutRecordService {
         }
 
         return repository.findByWorkoutDateBetween(startDate, endDate);
+    }
+
+    public WorkoutStatistics getStatistics() {
+        List<WorkoutRecord> records = repository.findAll();
+
+        int totalSets = records.stream()
+                .mapToInt(WorkoutRecord::getSets)
+                .sum();
+
+        double totalVolume = records.stream()
+                .mapToDouble(WorkoutRecord::calculateVolume)
+                .sum();
+
+        List<ExerciseStatistics> exerciseStatistics = records.stream()
+                .collect(Collectors.groupingBy(
+                        WorkoutRecord::getExerciseName,
+                        () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER),
+                        Collectors.toList()
+                ))
+                .entrySet()
+                .stream()
+                .map(entry -> createExerciseStatistics(entry.getKey(), entry.getValue()))
+                .toList();
+
+        return new WorkoutStatistics(
+                records.size(),
+                totalSets,
+                totalVolume,
+                exerciseStatistics
+        );
     }
 
     public boolean updateRecord(WorkoutRecord record) {
@@ -94,5 +128,31 @@ public class WorkoutRecordService {
         if (id == null || id <= 0) {
             throw new IllegalArgumentException(action + "할 기록의 id는 1 이상이어야 합니다.");
         }
+    }
+
+    private ExerciseStatistics createExerciseStatistics(
+            String exerciseName,
+            List<WorkoutRecord> records
+    ) {
+        int totalSets = records.stream()
+                .mapToInt(WorkoutRecord::getSets)
+                .sum();
+
+        double maxWeight = records.stream()
+                .mapToDouble(WorkoutRecord::getWeight)
+                .max()
+                .orElse(0.0);
+
+        double totalVolume = records.stream()
+                .mapToDouble(WorkoutRecord::calculateVolume)
+                .sum();
+
+        return new ExerciseStatistics(
+                exerciseName,
+                records.size(),
+                totalSets,
+                maxWeight,
+                totalVolume
+        );
     }
 }

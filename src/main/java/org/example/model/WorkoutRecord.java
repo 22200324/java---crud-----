@@ -89,6 +89,10 @@ public class WorkoutRecord {
         this.memo = memo;
     }
 
+    public double calculateVolume() {
+        return weight * reps * sets;
+    }
+
     @Override
     public String toString() {
         return "WorkoutRecord{" +
