@@ -1,7 +1,9 @@
 package org.example.view;
 
 import org.example.exception.DataAccessException;
+import org.example.model.ExerciseStatistics;
 import org.example.model.WorkoutRecord;
+import org.example.model.WorkoutStatistics;
 import org.example.service.WorkoutRecordService;
 
 import java.time.LocalDate;
@@ -52,6 +54,9 @@ public class ConsoleView {
                     case 7:
                         searchByDateRange();
                         break;
+                    case 8:
+                        showStatistics();
+                        break;
                     case 0:
                         System.out.println("프로그램을 종료합니다.");
                         return;
@@ -76,6 +81,7 @@ public class ConsoleView {
         System.out.println("5. 운동 기록 삭제");
         System.out.println("6. 운동 이름으로 검색");
         System.out.println("7. 날짜 범위로 조회");
+        System.out.println("8. 운동 통계");
         System.out.println("0. 종료");
     }
 
@@ -238,6 +244,32 @@ public class ConsoleView {
 
         for (WorkoutRecord record : records) {
             System.out.println(record);
+        }
+    }
+
+    private void showStatistics() {
+        System.out.println("\n[운동 통계]");
+
+        WorkoutStatistics statistics = service.getStatistics();
+
+        if (statistics.totalRecordCount() == 0) {
+            System.out.println("통계를 계산할 운동 기록이 없습니다.");
+            return;
+        }
+
+        System.out.println("[전체]");
+        System.out.println("총 기록 수: " + statistics.totalRecordCount() + "건");
+        System.out.println("총 세트 수: " + statistics.totalSets() + "세트");
+        System.out.printf("총 볼륨: %,.1fkg%n", statistics.totalVolume());
+
+        System.out.println("\n[운동별]");
+
+        for (ExerciseStatistics exercise : statistics.exerciseStatistics()) {
+            System.out.println("- " + exercise.exerciseName());
+            System.out.println("  기록 수: " + exercise.recordCount() + "건");
+            System.out.printf("  최대 무게: %,.1fkg%n", exercise.maxWeight());
+            System.out.println("  총 세트 수: " + exercise.totalSets() + "세트");
+            System.out.printf("  누적 볼륨: %,.1fkg%n", exercise.totalVolume());
         }
     }
 
