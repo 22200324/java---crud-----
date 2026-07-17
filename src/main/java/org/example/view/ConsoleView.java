@@ -49,6 +49,9 @@ public class ConsoleView {
                     case 6:
                         searchByExerciseName();
                         break;
+                    case 7:
+                        searchByDateRange();
+                        break;
                     case 0:
                         System.out.println("프로그램을 종료합니다.");
                         return;
@@ -72,6 +75,7 @@ public class ConsoleView {
         System.out.println("4. 운동 기록 수정");
         System.out.println("5. 운동 기록 삭제");
         System.out.println("6. 운동 이름으로 검색");
+        System.out.println("7. 날짜 범위로 조회");
         System.out.println("0. 종료");
     }
 
@@ -218,6 +222,25 @@ public class ConsoleView {
         }
     }
 
+    private void searchByDateRange() {
+        System.out.println("\n[날짜 범위로 조회]");
+
+        LocalDate startDate = readRequiredDate("시작 날짜(yyyy-MM-dd): ");
+        LocalDate endDate = readRequiredDate("종료 날짜(yyyy-MM-dd): ");
+        List<WorkoutRecord> records = service.searchRecordsByDateRange(startDate, endDate);
+
+        if (records.isEmpty()) {
+            System.out.println("해당 기간의 운동 기록이 없습니다.");
+            return;
+        }
+
+        System.out.println("조회 결과 " + records.size() + "건:");
+
+        for (WorkoutRecord record : records) {
+            System.out.println(record);
+        }
+    }
+
     private String readString(String message) {
         System.out.print(message);
         return scanner.nextLine().trim();
@@ -266,6 +289,24 @@ public class ConsoleView {
 
             if (input.isEmpty()) {
                 return defaultDate;
+            }
+
+            try {
+                return LocalDate.parse(input);
+            } catch (DateTimeParseException e) {
+                System.out.println("날짜는 yyyy-MM-dd 형식으로 입력해주세요.");
+            }
+        }
+    }
+
+    private LocalDate readRequiredDate(String message) {
+        while (true) {
+            System.out.print(message);
+            String input = scanner.nextLine().trim();
+
+            if (input.isEmpty()) {
+                System.out.println("날짜를 입력해주세요.");
+                continue;
             }
 
             try {

@@ -17,6 +17,11 @@ import java.util.Optional;
 
 public class WorkoutRecordFileRepository implements WorkoutRecordRepository {
 
+    private static final Comparator<WorkoutRecord> NEWEST_FIRST = Comparator
+            .comparing(WorkoutRecord::getWorkoutDate)
+            .reversed()
+            .thenComparing(WorkoutRecord::getId, Comparator.reverseOrder());
+
     private final Path filePath;
 
     public WorkoutRecordFileRepository() {
@@ -108,10 +113,16 @@ public class WorkoutRecordFileRepository implements WorkoutRecordRepository {
                 .filter(record -> record.getExerciseName()
                         .toLowerCase(Locale.ROOT)
                         .contains(normalizedKeyword))
-                .sorted(Comparator
-                        .comparing(WorkoutRecord::getWorkoutDate)
-                        .reversed()
-                        .thenComparing(WorkoutRecord::getId, Comparator.reverseOrder()))
+                .sorted(NEWEST_FIRST)
+                .toList();
+    }
+
+    @Override
+    public List<WorkoutRecord> findByWorkoutDateBetween(LocalDate startDate, LocalDate endDate) {
+        return findAll().stream()
+                .filter(record -> !record.getWorkoutDate().isBefore(startDate))
+                .filter(record -> !record.getWorkoutDate().isAfter(endDate))
+                .sorted(NEWEST_FIRST)
                 .toList();
     }
 
