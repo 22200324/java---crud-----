@@ -2,6 +2,7 @@ package org.example.repository;
 
 import org.example.model.WorkoutRecord;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,6 +15,8 @@ public interface WorkoutRecordRepository {
     Optional<WorkoutRecord> findById(Long id);
 
     List<WorkoutRecord> findByExerciseNameContaining(String keyword);
+
+    List<WorkoutRecord> findByWorkoutDateBetween(LocalDate startDate, LocalDate endDate);
 
     boolean update(WorkoutRecord record);
 

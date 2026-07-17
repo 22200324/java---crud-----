@@ -10,6 +10,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -138,6 +139,37 @@ public class WorkoutRecordDbRepository implements WorkoutRecordRepository {
 
         } catch (SQLException e) {
             throw new DataAccessException("운동 이름으로 기록을 검색하지 못했습니다.", e);
+        }
+    }
+
+    @Override
+    public List<WorkoutRecord> findByWorkoutDateBetween(LocalDate startDate, LocalDate endDate) {
+        String sql = """
+                SELECT id, exercise_name, weight, reps, sets, workout_date, memo
+                FROM workout_records
+                WHERE workout_date BETWEEN ? AND ?
+                ORDER BY workout_date DESC, id DESC
+                """;
+
+        List<WorkoutRecord> records = new ArrayList<>();
+
+        try (
+                Connection connection = DBConnection.getInstance().getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)
+        ) {
+            statement.setDate(1, Date.valueOf(startDate));
+            statement.setDate(2, Date.valueOf(endDate));
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    records.add(mapRowToWorkoutRecord(resultSet));
+                }
+            }
+
+            return records;
+
+        } catch (SQLException e) {
+            throw new DataAccessException("날짜 범위로 운동 기록을 조회하지 못했습니다.", e);
         }
     }
 

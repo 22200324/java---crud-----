@@ -3,6 +3,7 @@ package org.example.service;
 import org.example.model.WorkoutRecord;
 import org.example.repository.WorkoutRecordRepository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,6 +34,18 @@ public class WorkoutRecordService {
         }
 
         return repository.findByExerciseNameContaining(keyword.trim());
+    }
+
+    public List<WorkoutRecord> searchRecordsByDateRange(LocalDate startDate, LocalDate endDate) {
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("시작 날짜와 종료 날짜를 모두 입력해주세요.");
+        }
+
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("시작 날짜는 종료 날짜보다 늦을 수 없습니다.");
+        }
+
+        return repository.findByWorkoutDateBetween(startDate, endDate);
     }
 
     public boolean updateRecord(WorkoutRecord record) {
